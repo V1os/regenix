@@ -103,6 +103,7 @@ final class DI {
     }
 
     /**
+     * Get instance of class by using DI
      * @param $class
      * @param bool $createNonSingleton
      * @return null|object
@@ -124,6 +125,7 @@ final class DI {
     }
 
     /**
+     * Get instance of class as singleton with ignore bind information
      * @param $class
      * @param null $singletonDefault
      * @return null|object
@@ -141,6 +143,8 @@ final class DI {
     }
 
     /**
+     * Bind all classes in namespace to all classes in other interface namespace
+     *    Example: bindNamespaceTo('dao.', 'dao.impl.')
      * @param $interfaceNamespace
      * @param $implementNamespace
      * @param bool $singleton
@@ -162,6 +166,7 @@ final class DI {
     }
 
     /**
+     * Bind implementation class to interface
      * @param $interface
      * @param $class
      * @param bool $singleton
@@ -180,10 +185,17 @@ final class DI {
         }
     }
 
+    /**
+     * Bind object as singleton to its class
+     * @param $object
+     */
     public static function bind($object){
         self::$singletons[get_class($object)] = $object;
     }
 
+    /**
+     * Clear and remove all bind information
+     */
     public static function clear(){
         self::$singletons = array();
         self::$cacheNamespaceBinds = array();

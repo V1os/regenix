@@ -1,7 +1,6 @@
 <?php
 namespace regenix\scheduler;
 
-
 use regenix\Regenix;
 use regenix\cache\Cache;
 use regenix\lang\ClassScanner;
@@ -43,9 +42,24 @@ class Scheduler {
         return $this->name;
     }
 
-    public function update(){
+    public function run($interval, $tickCallback = null, $exceptionCallback){
+        $interval = Time::parseDuration($interval);
+        while(true){
+            $this->update($exceptionCallback);
+            time_nanosleep($interval, 0);
+            if ($tickCallback)
+                call_user_func($tickCallback);
+        }
+    }
+
+    public function update($exceptionCallback = null){
         foreach($this->tasks as $task){
-            $task->run();
+            try {
+                $task->run();
+            } catch (\Exception $e){
+                if ($exceptionCallback)
+                    call_user_func($exceptionCallback, $e, $task);
+            }
         }
         $this->updateCache();
     }

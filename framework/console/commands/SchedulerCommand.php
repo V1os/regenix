@@ -6,12 +6,18 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Process\Process;
+use regenix\Regenix;
 use regenix\cache\Cache;
+use regenix\console\BackgroundProcess;
 use regenix\console\ConsoleCommand;
 use regenix\console\RegenixCommand;
+use regenix\console\RegenixProcess;
 use regenix\lang\CoreException;
 use regenix\lang\File;
+use regenix\lang\String;
+use regenix\logger\Logger;
 use regenix\scheduler\Scheduler;
+use regenix\scheduler\SchedulerTask;
 
 class SchedulerCommand extends RegenixCommand {
 
@@ -51,11 +57,15 @@ class SchedulerCommand extends RegenixCommand {
         $this->writeln('    Task count: %s', sizeof($tasks));
 
         if ($input->getOption('daemon')){
-            $process = new Process('regenix scheduler');
-            $process->setTimeout(0);
-            $process->start();
+            $process = new Process('WMIC path win32_process get Processid,Commandline');
+            $process->run(function($err, $out){
+                $this->writeln($out);
+            });
 
-            $pid = $process->getPid();
+            /*
+            $process = new BackgroundProcess('regenix scheduler');
+            $process->start();
+            $pid = '?';*/
 
             $this->writeln('    Scheduler PID: %s', $pid);
             $this->writeln();
@@ -78,13 +88,21 @@ class SchedulerCommand extends RegenixCommand {
 
         if (sizeof($tasks) === 0){
             $file->delete();
-            throw new CoreException('Can`t run scheduler with empty tasks');
+            throw new CoreException('Can`t run scheduler with empty task list');
         } else {
             if (!$input->getOption('daemon')){
-                while(true){
-                    $scheduler->update();
-                    time_nanosleep($interval, 0);
-                }
+                $scheduler->run($interval, function(){
+
+                }, function(\Exception $e, SchedulerTask $task){
+                    $this->writeln('[%s] %s', get_class($e), get_class($task));
+                    $this->writeln('    message: %s', $e->getMessage());
+                    $this->writeln('    %s (line: %s)', $e->getFile(), $e->getLine());
+                    $this->writeln('    trace:');
+                    $this->writeln($e->getTraceAsString());
+
+                    Logger::error('[%s] %s (msg: %s, %s at %s)',
+                        get_class($e), get_class($task), $e->getMessage(), $e->getFile(), $e->getLine());
+                });
                 $file->delete();
             }
         }
