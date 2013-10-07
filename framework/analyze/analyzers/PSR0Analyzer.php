@@ -1,6 +1,9 @@
 <?php
-namespace regenix\analyze;
+namespace regenix\analyze\analyzers;
 
+use regenix\analyze\AnalyzeException;
+use regenix\analyze\AnalyzeManager;
+use regenix\analyze\Analyzer;
 use regenix\lang\File;
 use regenix\lang\String;
 
